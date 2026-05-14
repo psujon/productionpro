@@ -1,0 +1,30 @@
+.invoice-container {
+  padding: 30px;
+}
+
+.btn {
+  padding: 10px 20px;
+  margin-right: 10px;
+  background: #007bff;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #0056b3;
+}
+
+.print-btn {
+  background: #28a745;
+}
+
+@media print {
+  .btn {
+    display: none;
+  }
+
+  body {
+    background: white !important;
+  }
+}
