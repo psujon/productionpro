@@ -59,7 +59,9 @@ const Permission = () => {
         { id: 'section', label: 'Sections' },
         { id: 'blockLine', label: 'Blocks/Lines' },
       ]
-    }
+    },
+    { id: 'community', label: 'Community' },
+    { id: 'tickets', label: 'Tickets' }
   ];
 
   useEffect(() => {

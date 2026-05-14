@@ -23,6 +23,10 @@ export const AuthProvider = ({ children }) => {
   });
 
   const [permissions, setPermissions] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [activeChatUser, setActiveChatUser] = useState(null);
+  const [recentMessages, setRecentMessages] = useState([]);
+  const [unresolvedTickets, setUnresolvedTickets] = useState({ count: 0, tickets: [] });
 
   const fetchPermissions = async (username) => {
     try {
@@ -33,9 +37,58 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const fetchUnreadCount = async (username) => {
+    try {
+      const res = await axios.post(`${server_url}/community/unread-count`, { username });
+      setUnreadCount(res.data.count || 0);
+    } catch (err) {
+      console.error('Failed to fetch unread count:', err);
+    }
+  };
+
+  const fetchRecentMessages = async (username) => {
+    try {
+      // We can reuse the list endpoint but maybe with a special filter or just get all recent for this user
+      // For now, let's just fetch messages where receiver is current user
+      const res = await axios.post(`${server_url}/community/list`, { 
+          username, 
+          other_username: null, // special case for recent overall
+          is_recent: true 
+      });
+      setRecentMessages(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch recent messages:', err);
+    }
+  };
+
+  const fetchUnresolvedTickets = async () => {
+    try {
+      const res = await axios.get(`${server_url}/tickets/unresolved`);
+      setUnresolvedTickets(res.data);
+    } catch (err) {
+      console.error('Failed to fetch unresolved tickets:', err);
+    }
+  };
+
   useEffect(() => {
     if (user?.username) {
       fetchPermissions(user.username);
+      fetchUnreadCount(user.username);
+      fetchRecentMessages(user.username);
+      
+      if (user.role === 'Admin') {
+        fetchUnresolvedTickets();
+      }
+      
+      const interval = setInterval(() => {
+        fetchUnreadCount(user.username);
+        fetchRecentMessages(user.username);
+        if (user.role === 'Admin') {
+          fetchUnresolvedTickets();
+        }
+      }, 30000); // Poll every 30 seconds
+      
+      return () => clearInterval(interval);
     }
   }, [user]);
 
@@ -85,6 +138,14 @@ export const AuthProvider = ({ children }) => {
     user,
     permissions,
     fetchPermissions,
+    unreadCount,
+    fetchUnreadCount,
+    recentMessages,
+    fetchRecentMessages,
+    activeChatUser,
+    setActiveChatUser,
+    unresolvedTickets,
+    fetchUnresolvedTickets,
     login,
     logout,
     server_url,

@@ -98,6 +98,26 @@ const Sidebar = ({ isOpen }) => {
         { id: 'section', label: 'Sections', href: '/dashboard/section' },
         { id: 'blockLine', label: 'Blocks/Lines', href: '/dashboard/blockline' },
       ]
+    },
+    {
+      id: 'community',
+      label: 'Community',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+      ),
+      href: '/dashboard/community'
+    },
+    {
+      id: 'tickets',
+      label: 'Tickets',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+        </svg>
+      ),
+      href: '/dashboard/tickets'
     }
   ];
 
@@ -105,7 +125,7 @@ const Sidebar = ({ isOpen }) => {
   const hasAccess = (item) => {
     if (user?.role === 'admin' || user?.role === 'Admin') return true;
     if (item.adminOnly) return false;
-    
+
     // Check database permissions
     const perm = permissions.find(p => p.menu_id === (item.id || item.label));
     return perm ? perm.has_access : false;

@@ -1,9 +1,28 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { useAuthContext } from '../AuthContextProvider/AuthContextProvider';
+import { Link } from 'react-router-dom';
 
 const DashboardNavbar = ({ onToggleSidebar }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const { user, logout, bgColor, setBgColor } = useAuthContext();
+  const [isMessagesOpen, setIsMessagesOpen] = useState(false);
+  const [isTicketsOpen, setIsTicketsOpen] = useState(false);
+  const { user, server_url, logout, bgColor, setBgColor, unreadCount, recentMessages, setActiveChatUser, fetchUnreadCount, fetchRecentMessages, unresolvedTickets } = useAuthContext();
+
+  const handleMessageClick = async (msg) => {
+    setActiveChatUser({ username: msg.sender_username, full_name: msg.sender_username });
+    setIsMessagesOpen(false);
+    try {
+      await axios.post(`${server_url}/community/mark-read`, {
+        username: user.username,
+        sender_username: msg.sender_username
+      });
+      fetchUnreadCount(user.username);
+      fetchRecentMessages(user.username);
+    } catch (err) {
+      console.error('Failed to mark as read on click:', err);
+    }
+  };
 
   return (
     <nav className="premium-card rounded-none border-b border-gray-50 h-20 sticky top-0 z-50 transition-all duration-300">
@@ -50,13 +69,110 @@ const DashboardNavbar = ({ onToggleSidebar }) => {
               />
             </div>
 
-            {/* Notification Bell */}
-            <button className="p-3 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all relative group">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-5 5v-5zM10.5 3.75a6 6 0 0 0-6 6v2.25l-2.47 2.47a.75.75 0 0 0 .53 1.28h15.88a.75.75 0 0 0 .53-1.28L16.5 12V9.75a6 6 0 0 0-6-6z" />
-              </svg>
-              <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
+            {/* Notification Bell with Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsMessagesOpen(!isMessagesOpen)}
+                className="p-3 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all relative group"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-5 5v-5zM10.5 3.75a6 6 0 0 0-6 6v2.25l-2.47 2.47a.75.75 0 0 0 .53 1.28h15.88a.75.75 0 0 0 .53-1.28L16.5 12V9.75a6 6 0 0 0-6-6z" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-black h-5 w-5 flex items-center justify-center rounded-full border-2 border-white ring-1 ring-red-500/20 animate-bounce">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {isMessagesOpen && (
+                <div className="absolute right-0 mt-4 w-80 premium-card rounded-3xl shadow-2xl border border-gray-100 py-4 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+                  <div className="px-6 pb-3 border-b border-gray-50 flex items-center justify-between">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recent Messages</span>
+                    <Link to="/dashboard/community" onClick={() => setIsMessagesOpen(false)} className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:underline">View All</Link>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                    {recentMessages.length > 0 ? (
+                      recentMessages.map((msg) => (
+                        <button
+                          key={msg.id}
+                          onClick={() => handleMessageClick(msg)}
+                          className="w-full px-6 py-4 flex items-start gap-4 hover:bg-slate-50 transition-colors text-left border-b border-gray-50 last:border-0"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-black text-xs shrink-0">
+                            {msg.sender_username.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div className="flex-1 overflow-hidden">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-black text-slate-800 uppercase tracking-tight truncate">@{msg.sender_username}</span>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase">
+                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{msg.message_text}</p>
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-8 py-10 text-center">
+                        <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                        </div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">No unread messages</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Ticket Notification for Admin */}
+            {user?.role === 'Admin' && (
+              <div className="relative">
+                <button 
+                  onClick={() => setIsTicketsOpen(!isTicketsOpen)}
+                  className="p-3 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-2xl transition-all relative group"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                  </svg>
+                  {unresolvedTickets.count > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black h-5 w-5 flex items-center justify-center rounded-full border-2 border-white shadow-lg animate-bounce">
+                      {unresolvedTickets.count}
+                    </span>
+                  )}
+                </button>
+
+                {isTicketsOpen && (
+                  <div className="absolute right-0 mt-4 w-80 premium-card rounded-3xl shadow-2xl border border-gray-100 py-4 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="px-6 pb-3 border-b border-gray-50 flex items-center justify-between">
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Unresolved Tickets</span>
+                      <Link to="/dashboard/tickets" onClick={() => setIsTicketsOpen(false)} className="text-[10px] font-black text-amber-600 uppercase tracking-widest hover:underline">Manage All</Link>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                      {unresolvedTickets.tickets.length > 0 ? (
+                        unresolvedTickets.tickets.map((t) => (
+                          <div key={t.id} className="w-full px-6 py-4 border-b border-gray-50 last:border-0 hover:bg-slate-50 transition-colors">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[10px] font-black text-slate-800 uppercase tracking-tight">#{t.id} by @{t.username}</span>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase">{new Date(t.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <h5 className="text-xs font-bold text-slate-700 uppercase tracking-tight mb-1 line-clamp-1">{t.subject}</h5>
+                            <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">{t.description}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-8 py-10 text-center">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">All caught up!</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="h-8 w-[1px] bg-gray-100 mx-2"></div>
 

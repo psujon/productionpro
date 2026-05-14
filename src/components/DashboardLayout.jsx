@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import DashboardNavbar from './Navbar';
 import Sidebar from './Sidebar';
+import FloatingChat from './FloatingChat';
 import { useAuthContext } from '../AuthContextProvider/AuthContextProvider';
 
 const DashboardLayout = () => {
@@ -13,7 +14,7 @@ const DashboardLayout = () => {
       {/* Navbar stays at top */}
       <DashboardNavbar onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Sidebar */}
         <Sidebar isOpen={isSidebarOpen} />
 
@@ -23,6 +24,9 @@ const DashboardLayout = () => {
             <Outlet />
           </div>
         </main>
+
+        {/* Global Floating Chat */}
+        <FloatingChat />
       </div>
     </div>
   );

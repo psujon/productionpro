@@ -30,6 +30,8 @@ const Section = lazy(() => import('./components/Section'));
 const BlockLine = lazy(() => import('./components/BlockLine'));
 const Useractivitylogs = lazy(() => import('./components/Useractivitylogs'));
 const Permission = lazy(() => import('./components/Permission'));
+const Community = lazy(() => import('./components/Community'));
+const Tickets = lazy(() => import('./components/Tickets'));
 
 // finally the App component itself router management with auth provider
 
@@ -68,6 +70,8 @@ function App() {
                 <Route path='blockLine' element={<Suspense fallback={<div>Loading...</div>}><BlockLine /></Suspense>} />
                 <Route path='Useractivitylogs' element={<Suspense fallback={<div>Loading...</div>}><Useractivitylogs /></Suspense>} />
                 <Route path='permission' element={<Suspense fallback={<div>Loading...</div>}><Permission /></Suspense>} />
+                <Route path='community' element={<Suspense fallback={<div>Loading...</div>}><Community /></Suspense>} />
+                <Route path='tickets' element={<Suspense fallback={<div>Loading...</div>}><Tickets /></Suspense>} />
                 {/* Add more dashboard routes here as needed */}
               </Route>
             </Route>
