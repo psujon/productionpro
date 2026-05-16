@@ -19,6 +19,7 @@ const globalFetchRoutes = require('./server/routes/globalFetch.routes');
 const employeeRoutes = require('./server/routes/employee.routes');
 const communityRoutes = require('./server/routes/community.routes');
 const ticketRoutes = require('./server/routes/ticket.routes');
+const blockRoutes = require('./server/routes/block.routes');
 
 // Mount routes
 app.use('/Buyer', buyerRoutes);
@@ -31,6 +32,7 @@ app.use('/globalFetch', globalFetchRoutes);
 app.use('/employee', employeeRoutes);
 app.use('/community', communityRoutes);
 app.use('/tickets', ticketRoutes);
+app.use('/block', blockRoutes);
 
 // Compatibility route for direct login
 const userController = require('./server/controllers/user.controller');

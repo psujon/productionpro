@@ -1,49 +1,46 @@
 import React, { useState, useEffect } from 'react';
+import { useAuthContext } from '../AuthContextProvider/AuthContextProvider';
 
 const BlockLine = () => {
+  const { server_url } = useAuthContext();
   const [buyers, setBuyers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(true);
   const [editingBuyer, setEditingBuyer] = useState(null);
   const [formData, setFormData] = useState({
-    CountryName:'',
-    CountryShortValue:''
+    block: ''
   });
 
-  // Sample initial data
-  const initialBuyers = [
-    {
-      id: 1,
-      CountryName:'United States',
-      CountryShortValue: 'US'
-    },
-    {
-      id: 2,
-      CountryName:'United States',
-      CountryShortValue: 'US'
+  const FetchBloctData = async () => {
+    try {
+      const response = await fetch(`${server_url}/block/list`);
+      const data = await response.json();
+      setBuyers(data);
+    } catch (err) {
+      console.error('Failed to fetch blocks:', err);
     }
-  ];
+  }
 
   useEffect(() => {
-    setBuyers(initialBuyers);
+    FetchBloctData();
   }, []);
 
-  // Search functionality
+
   const filteredBuyers = buyers.filter(buyer =>
     Object.values(buyer).some(value =>
       value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
-  // Sort functionality
+
   const sortedBuyers = [...filteredBuyers].sort((a, b) => {
     if (!sortField) return 0;
-    
+
     const aValue = a[sortField];
     const bValue = b[sortField];
-    
+
     if (sortDirection === 'asc') {
       return aValue > bValue ? 1 : -1;
     } else {
@@ -63,8 +60,7 @@ const BlockLine = () => {
   const handleAddNew = () => {
     setEditingBuyer(null);
     setFormData({
-    CountryName:'',
-    CountryShortValue: ''
+      block: ''
     });
     setIsModalOpen(!isModalOpen);
   };
@@ -72,40 +68,42 @@ const BlockLine = () => {
   const handleEdit = (buyer) => {
     setEditingBuyer(buyer);
     setFormData({
-      CountryName: buyer.CountryName,
-      CountryShortValue: buyer.CountryShortValue
+      block: buyer.block
     });
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this buyer?')) {
-      setBuyers(buyers.filter(buyer => buyer.id !== id));
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this block?')) {
+      await fetch(`${server_url}/block/delete/${id}`, {
+        method: 'DELETE',
+      });
+      FetchBloctData();
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    console.log(formData);
     if (editingBuyer) {
-      // Update existing buyer
-      setBuyers(buyers.map(buyer =>
-        buyer.id === editingBuyer.id
-          ? { ...buyer, ...formData }
-          : buyer
-      ));
+      await fetch(`${server_url}/block/update`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...formData, id: editingBuyer.id }),
+      });
+      FetchBloctData();
     } else {
-      // Add new buyer
-      const newBuyer = {
-        id: Math.max(...buyers.map(b => b.id)) + 1,
-        ...formData,
-        orders: 0,
-        totalSpent: '$0.00'
-      };
-      setBuyers([...buyers, newBuyer]);
+      await fetch(`${server_url}/block/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      FetchBloctData();
     }
-    
+
     setIsModalOpen(false);
     setEditingBuyer(null);
   };
@@ -124,14 +122,14 @@ const BlockLine = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-2">
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Country Management</h1>
+          <h1 className="text-2xl px-8 font-bold text-slate-800">Block Management</h1>
           {/* <p className="text-gray-600 mt-1">Manage your buyers and their information</p> */}
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-3 mt-4 lg:mt-0">
           {/* Search Input */}
           <div className="relative">
@@ -142,13 +140,13 @@ const BlockLine = () => {
             </div>
             <input
               type="text"
-              placeholder="Search country..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
             />
           </div>
-          
+
           {/* Add New Button */}
           <button
             onClick={handleAddNew}
@@ -157,7 +155,7 @@ const BlockLine = () => {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Add Country
+            Add Block
           </button>
         </div>
       </div>
@@ -165,38 +163,24 @@ const BlockLine = () => {
       {/* Add/Edit Modal */}
       {isModalOpen && (
         <div className={`transition-all duration-300 ease-in-out overflow-hidden 'max-h-[200px] opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
-          <div className="premium-card rounded-lg shadow-xl w-full">            
-            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">           
-              
+          <div className="premium-card rounded-lg shadow-xl w-full mb-4 p-4">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4">
+
               <div>
                 <label className="block text-sm font-medium text-slate-600 mb-1">
-                  Country Name
+                  Block Name
                 </label>
                 <input
                   type="text"
-                  name="CountryName"
-                  value={formData.CountryName}
+                  name="block"
+                  value={formData.block}
                   onChange={handleInputChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">
-                  Country Short Name
-                </label>
-                <input
-                  type="text"
-                  name="CountryShortValue"
-                  value={formData.CountryShortValue}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                />
-              </div>          
-              
-              
-              <div className="flex justify-end space-x-3 pt-4">
+
+              <div className="flex justify-start space-x-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -208,7 +192,7 @@ const BlockLine = () => {
                   type="submit"
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
                 >
-                  {editingBuyer ? 'Update' : 'Add'} Country
+                  {editingBuyer ? 'Update' : 'Add'} Block
                 </button>
               </div>
             </form>
@@ -226,12 +210,12 @@ const BlockLine = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Buyers</p>
+              <p className="text-sm font-medium text-gray-600">Total Blocks</p>
               <p className="text-2xl font-bold text-slate-800">{buyers.length}</p>
             </div>
           </div>
         </div>
-        
+
         <div className="premium-card p-4 rounded-lg border border-gray-200 shadow-sm">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
@@ -247,7 +231,7 @@ const BlockLine = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="premium-card p-4 rounded-lg border border-gray-200 shadow-sm">
           <div className="flex items-center">
             <div className="p-2 bg-orange-100 rounded-lg">
@@ -263,22 +247,6 @@ const BlockLine = () => {
             </div>
           </div>
         </div>
-        
-        {/* <div className="premium-card p-4 rounded-lg border border-gray-200 shadow-sm">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Order Qty</p>
-              <p className="text-2xl font-bold text-slate-800">
-                {buyers.CountryName.}
-              </p>
-            </div> 
-          </div>
-        </div> */}
       </div>
 
       {/* Table Section */}
@@ -286,15 +254,15 @@ const BlockLine = () => {
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 table-fixed">
             <colgroup>
-              <col style={{ width: '45%' }} />
-              <col style={{ width: '45%' }} />
-              <col style={{ width: '10%' }} />
+              <col style={{ width: '5%' }} />
+              <col style={{ width: '90%' }} />
+              <col style={{ width: '5%' }} />
             </colgroup>
             <thead className="">
               <tr>
                 {[
-                  { key: 'CountryName', label: 'Country_Name' },
-                  {key:'CountryShortValue', label: 'Country_Short_Value'},
+                  { key: 'id', label: 'ID' },
+                  { key: 'block', label: 'Block Name' },
                   { key: 'actions', label: 'Actions' }
                 ].map((column) => (
                   <th
@@ -315,17 +283,12 @@ const BlockLine = () => {
                 sortedBuyers.map((buyer) => (
                   <tr key={buyer.id} className="hover: transition duration-200">
                     <td className="px-6 py-4 break-words">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0">
-                          {buyer.CountryName.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div className="text-sm text-slate-800">{buyer.CountryName}</div>
-                      </div>
+                      <div className="text-sm text-slate-800">{buyer.id}</div>
                     </td>
                     <td className="px-6 py-4 break-words">
-                      <div className="text-sm text-slate-800">{buyer.CountryShortValue}</div>
+                      <div className="text-sm text-slate-800">{buyer.block}</div>
                     </td>
-                    
+
                     <td className="px-6 py-4 text-sm font-medium">
                       <div className="flex items-center space-x-2">
                         <button
@@ -368,7 +331,7 @@ const BlockLine = () => {
         </div>
       </div>
 
-      
+
     </div>
   );
 };
