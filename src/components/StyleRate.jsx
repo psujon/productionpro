@@ -441,7 +441,7 @@ const StyleRate = () => {
                   <td className="px-6 py-4 text-sm font-bold text-slate-800 break-words">{item.style}</td>
                   <td className="px-6 py-4 text-sm text-gray-600 font-medium break-words">{item.process}</td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-black text-blue-600">৳{(Number(item.price) || 0).toFixed(2)}</span>
+                    <span className="text-sm font-black text-blue-600">৳ {(Number(item.price) || 0).toFixed(2)}</span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">

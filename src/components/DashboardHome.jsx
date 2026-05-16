@@ -8,19 +8,20 @@ const DashboardHome = () => {
   const [loadingSummary, setLoadingSummary] = useState(false);
 
 
+  const fetchInitialData = async () => {
+    try {
+      setLoadingSummary(true);
+      const res = await axios.post(`${server_url}/production/style/monthlySummary`, { ...user, year: new Date().getFullYear(), month: new Date().getMonth() + 1 });
+      setSummary(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error('Failed to load dashboard summary', err);
+    }
+    finally {
+      setLoadingSummary(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        setLoadingSummary(true);
-        const res = await axios.post(`${server_url}/production/style/monthlySummary`, { ...user, year: new Date().getFullYear(), month: new Date().getMonth() + 1 });
-        setSummary(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.error('Failed to load dashboard summary', err);
-      }
-      finally {
-        setLoadingSummary(false);
-      }
-    };
     fetchInitialData();
   }, [server_url, user]);
 
@@ -44,32 +45,21 @@ const DashboardHome = () => {
   }
 
   const handleRefreshButtonClick = async () => {
-    try {
-      setLoadingSummary(true);
-      const res = await axios.post(`${server_url}/production/style/monthlySummary`, { ...user, year: new Date().getFullYear(), month: new Date().getMonth() + 1 });
-      // expect res.data = [{ label: 'Style A', value: 123 }, ...]
-      // console.log(res.data);
-      setSummary(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      console.error('Failed to load dashboard summary', err);
-    } finally {
-      setLoadingSummary(false);
-    }
+    fetchInitialData();
   };
 
-  // Prepare chart data: top styles by value
+
   const chartData = React.useMemo(() => {
     if (!summary || summary.length === 0) return [];
-    // assume summary items have { label, value }
     const sorted = [...summary].sort((a, b) => b.value - a.value);
     return sorted.slice(0, 6);
   }, [summary]);
 
   return (
-    <div className="p-8  min-h-screen">
+    <div className="p-2  min-h-screen">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4">
-        <div>
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
+        <div className='px-8'>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">System Analytics</h1>
           <p className="text-gray-500 font-medium mt-1">Live performance monitoring and production summaries.</p>
         </div>
@@ -128,15 +118,16 @@ const DashboardHome = () => {
             <table className="min-w-full divide-y divide-gray-100">
               <thead className="">
                 <tr>
-                  <th className="px-8 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Style Identifier</th>
-                  <th className="px-8 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Process Stage</th>
-                  <th className="px-8 py-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Quantity</th>
+                  <th className="px-4 py-2 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">#</th>
+                  <th className="px-8 py-2 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Style</th>
+                  <th className="px-8 py-2 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Process</th>
+                  <th className="px-8 py-2 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Quantity</th>
                 </tr>
               </thead>
               <tbody className="premium-card divide-y divide-gray-50">
                 {loadingSummary ? (
                   <tr>
-                    <td colSpan={3} className="px-8 py-16 text-center">
+                    <td colSpan={4} className="px-8 py-16 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <div className="w-10 h-10 border-[3px] border-emerald-100 border-t-emerald-600 rounded-full animate-spin"></div>
                         <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Syncing Database...</span>
@@ -145,7 +136,7 @@ const DashboardHome = () => {
                   </tr>
                 ) : summary.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="px-8 py-16 text-center">
+                    <td colSpan={4} className="px-8 py-16 text-center">
                       <div className="flex flex-col items-center gap-2">
                         <div className="p-3  rounded-2xl text-gray-300">
                           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
@@ -155,15 +146,18 @@ const DashboardHome = () => {
                     </td>
                   </tr>
                 ) : (
-                  summary.slice(0, 10).map((r, idx) => (
-                    <tr key={idx} className="hover:bg-emerald-50/20 transition-colors group cursor-default">
-                      <td className="px-8 py-5 whitespace-nowrap text-sm font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">{r.style}</td>
-                      <td className="px-8 py-5 whitespace-nowrap">
+                  summary.map((r, idx) => (
+                    <tr key={idx} className="hover:bg-emerald-50/50 transition-colors group cursor-default">
+                      <td className="px-4 py-1">
+                        {idx + 1}
+                      </td>
+                      <td className="px-8 py-1 whitespace-nowrap text-sm font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">{r.style}</td>
+                      <td className="px-8 py-1 whitespace-nowrap">
                         <span className="px-3 py-1 bg-gray-100 rounded-lg text-[10px] font-black uppercase text-gray-600 tracking-tight">
                           {r.process}
                         </span>
                       </td>
-                      <td className="px-8 py-5 whitespace-nowrap text-sm text-right font-black text-slate-800">{r.Total_Qty.toLocaleString()}</td>
+                      <td className="px-8 py-2 whitespace-nowrap text-sm text-right font-black text-slate-800">{r.Total_Qty.toLocaleString()}</td>
                     </tr>
                   ))
                 )}

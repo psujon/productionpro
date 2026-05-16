@@ -127,9 +127,12 @@ const getMonthlySummary = async (req, res) => {
     try {
         const { unit, year, month } = req.body;
         const pool = await getPool();
+        const user_role = req.body.role;
+        const section = (user_role === "Operator") ? req.body.section : null;
         const request = pool.request();
 
         request.input('unit', mssql.NVarChar(200), unit);
+        request.input('section', mssql.NVarChar(200), section);
         request.input('year', mssql.Int, year);
         request.input('month', mssql.Int, month);
 
@@ -138,6 +141,7 @@ const getMonthlySummary = async (req, res) => {
                    SUM(quantity) as value, style as label
             FROM tbl_production_info 
             WHERE unit = @unit 
+            AND (section = @section OR @section IS NULL)
             AND YEAR(prod_date) = @year 
             AND MONTH(prod_date) = @month
             GROUP BY style, process
