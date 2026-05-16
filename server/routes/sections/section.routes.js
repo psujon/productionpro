@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getPool } = require('../../config/db');
+const { GetSectionItemsList, SectionItemsAdd, SectionItemsUpdate, SectionItemsDelete } = require('../../controllers/section.controller');
 
 // Get distinct sections from tbl_style_info
 router.get('/list', async (req, res) => {
@@ -15,4 +16,8 @@ router.get('/list', async (req, res) => {
     }
 });
 
+router.get('/items/list', GetSectionItemsList)
+router.post('/items/add', SectionItemsAdd)
+router.post('/items/update', SectionItemsUpdate)
+router.delete('/items/delete', SectionItemsDelete)
 module.exports = router;

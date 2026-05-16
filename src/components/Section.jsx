@@ -1,38 +1,50 @@
 import React, { useState, useEffect } from 'react';
+import { useAuthContext } from '../AuthContextProvider/AuthContextProvider';
+import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const Section = () => {
-  const [buyers, setBuyers] = useState([]);
+  const { server_url, user } = useAuthContext();
+  const [sections, setSectionList] = useState([]);
+  const [departments, setDepartmentList] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(true);
   const [editingBuyer, setEditingBuyer] = useState(null);
   const [formData, setFormData] = useState({
-    CountryName:'',
-    CountryShortValue:''
+    department: '',
+    section: '',
   });
 
-  // Sample initial data
-  const initialBuyers = [
-    {
-      id: 1,
-      CountryName:'United States',
-      CountryShortValue: 'US'
-    },
-    {
-      id: 2,
-      CountryName:'United States',
-      CountryShortValue: 'US'
-    }
-  ];
+  const FetchSectionData = async () => {
+    await axios.get(`${server_url}/section/items/list`)
+      .then(res => {
+        setSectionList(res.data);
+      })
+      .catch(err => {
+        toast.error('Failed to fetch section data');
+      })
+  }
+
+  const FetchDepartmentData = async () => {
+    await axios.get(`${server_url}/globalFetch/department/list`)
+      .then(res => {
+        setDepartmentList(res.data);
+      })
+      .catch(err => {
+        toast.error('Failed to fetch department data');
+      })
+  }
 
   useEffect(() => {
-    setBuyers(initialBuyers);
+    FetchSectionData();
+    FetchDepartmentData();
   }, []);
 
   // Search functionality
-  const filteredBuyers = buyers.filter(buyer =>
-    Object.values(buyer).some(value =>
+  const filteredBuyers = sections.filter(section =>
+    Object.values(section).some(value =>
       value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
@@ -40,10 +52,10 @@ const Section = () => {
   // Sort functionality
   const sortedBuyers = [...filteredBuyers].sort((a, b) => {
     if (!sortField) return 0;
-    
+
     const aValue = a[sortField];
     const bValue = b[sortField];
-    
+
     if (sortDirection === 'asc') {
       return aValue > bValue ? 1 : -1;
     } else {
@@ -63,49 +75,58 @@ const Section = () => {
   const handleAddNew = () => {
     setEditingBuyer(null);
     setFormData({
-    CountryName:'',
-    CountryShortValue: ''
+      department: '',
+      section: '',
     });
     setIsModalOpen(!isModalOpen);
   };
 
-  const handleEdit = (buyer) => {
-    setEditingBuyer(buyer);
+  const handleEdit = (section) => {
+    setEditingBuyer(section);
     setFormData({
-      CountryName: buyer.CountryName,
-      CountryShortValue: buyer.CountryShortValue
+      department: section.department,
+      section: section.section,
     });
     setIsModalOpen(true);
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this buyer?')) {
-      setBuyers(buyers.filter(buyer => buyer.id !== id));
+    if (window.confirm('Are you sure you want to delete this section?')) {
+      axios.delete(`${server_url}/section/items/delete`, { data: { id } })
+        .then(res => {
+          toast.success('Section deleted successfully');
+          FetchSectionData();
+        })
+        .catch(err => {
+          toast.error('Failed to delete section');
+        })
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     console.log(formData);
     if (editingBuyer) {
-      // Update existing buyer
-      setBuyers(buyers.map(buyer =>
-        buyer.id === editingBuyer.id
-          ? { ...buyer, ...formData }
-          : buyer
-      ));
+      axios.post(`${server_url}/section/items/update`, { ...formData, id: editingBuyer.id })
+        .then(res => {
+          toast.success('Section updated successfully');
+          FetchSectionData();
+        })
+        .catch(err => {
+          toast.error('Failed to update section');
+        })
     } else {
-      // Add new buyer
-      const newBuyer = {
-        id: Math.max(...buyers.map(b => b.id)) + 1,
-        ...formData,
-        orders: 0,
-        totalSpent: '$0.00'
-      };
-      setBuyers([...buyers, newBuyer]);
+      axios.post(`${server_url}/section/items/add`, formData)
+        .then(res => {
+          toast.success('Section added successfully');
+          FetchSectionData();
+        })
+        .catch(err => {
+          toast.error('Failed to add section');
+        })
     }
-    
+
     setIsModalOpen(false);
     setEditingBuyer(null);
   };
@@ -124,14 +145,14 @@ const Section = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-2">
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Country Management</h1>
+          <h1 className="text-2xl px-8 font-bold text-slate-800">Country Management</h1>
           {/* <p className="text-gray-600 mt-1">Manage your buyers and their information</p> */}
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-3 mt-4 lg:mt-0">
           {/* Search Input */}
           <div className="relative">
@@ -148,7 +169,7 @@ const Section = () => {
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
             />
           </div>
-          
+
           {/* Add New Button */}
           <button
             onClick={handleAddNew}
@@ -165,38 +186,43 @@ const Section = () => {
       {/* Add/Edit Modal */}
       {isModalOpen && (
         <div className={`transition-all duration-300 ease-in-out overflow-hidden 'max-h-[200px] opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
-          <div className="premium-card rounded-lg shadow-xl w-full">            
-            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">           
-              
-              <div>
+          <div className="premium-card p-4 mb-4 rounded-lg shadow-xl w-full">
+            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-1 gap-4">
                 <label className="block text-sm font-medium text-slate-600 mb-1">
-                  Country Name
+                  Department Name
+                </label>
+                <select
+                  name="department"
+                  value={formData.department}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                >
+                  <option value="">Select Department</option>
+                  {departments.map(department => (
+                    <option key={department.id} value={department.id}>{department.department}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <label className="block text-sm font-medium text-slate-600 mb-1">
+                  Section Name
                 </label>
                 <input
                   type="text"
-                  name="CountryName"
-                  value={formData.CountryName}
+                  name="section"
+                  value={formData.section}
                   onChange={handleInputChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">
-                  Country Short Name
-                </label>
-                <input
-                  type="text"
-                  name="CountryShortValue"
-                  value={formData.CountryShortValue}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                />
-              </div>          
-              
-              
-              <div className="flex justify-end space-x-3 pt-4">
+
+
+              <div className="space-x-3 py-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -226,12 +252,12 @@ const Section = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Buyers</p>
-              <p className="text-2xl font-bold text-slate-800">{buyers.length}</p>
+              <p className="text-sm font-medium text-gray-600">Total Sections</p>
+              <p className="text-2xl font-bold text-slate-800">{sections.length}</p>
             </div>
           </div>
         </div>
-        
+
         <div className="premium-card p-4 rounded-lg border border-gray-200 shadow-sm">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
@@ -242,12 +268,12 @@ const Section = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Active</p>
               <p className="text-2xl font-bold text-slate-800">
-                {buyers.filter(b => b.status === 'Active').length}
+                {sections.filter(b => b.status === 'Active').length}
               </p>
             </div>
           </div>
         </div>
-        
+
         <div className="premium-card p-4 rounded-lg border border-gray-200 shadow-sm">
           <div className="flex items-center">
             <div className="p-2 bg-orange-100 rounded-lg">
@@ -258,27 +284,11 @@ const Section = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Pending</p>
               <p className="text-2xl font-bold text-slate-800">
-                {buyers.filter(b => b.status === 'Pending').length}
+                {sections.filter(b => b.status === 'Pending').length}
               </p>
             </div>
           </div>
         </div>
-        
-        {/* <div className="premium-card p-4 rounded-lg border border-gray-200 shadow-sm">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Order Qty</p>
-              <p className="text-2xl font-bold text-slate-800">
-                {buyers.CountryName.}
-              </p>
-            </div> 
-          </div>
-        </div> */}
       </div>
 
       {/* Table Section */}
@@ -286,15 +296,17 @@ const Section = () => {
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 table-fixed">
             <colgroup>
-              <col style={{ width: '45%' }} />
-              <col style={{ width: '45%' }} />
+              <col style={{ width: '5%' }} />
+              <col style={{ width: '20%' }} />
+              <col style={{ width: '65%' }} />
               <col style={{ width: '10%' }} />
             </colgroup>
             <thead className="">
               <tr>
                 {[
-                  { key: 'CountryName', label: 'Country_Name' },
-                  {key:'CountryShortValue', label: 'Country_Short_Value'},
+                  { key: 'id', label: 'ID' },
+                  { key: 'section', label: 'section' },
+                  { key: 'department', label: 'department' },
                   { key: 'actions', label: 'Actions' }
                 ].map((column) => (
                   <th
@@ -313,20 +325,26 @@ const Section = () => {
             <tbody className="premium-card divide-y divide-gray-200">
               {sortedBuyers.length > 0 ? (
                 sortedBuyers.map((buyer) => (
-                  <tr key={buyer.id} className="hover: transition duration-200">
-                    <td className="px-6 py-4 break-words">
+                  <tr key={buyer.id} className="hover: transition duration-200 border border-gray-300">
+                    <td className="px-6 py-2 break-words">
                       <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0">
-                          {buyer.CountryName.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div className="text-sm text-slate-800">{buyer.CountryName}</div>
+                        <div className="text-sm text-slate-800">{buyer.id}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 break-words">
-                      <div className="text-sm text-slate-800">{buyer.CountryShortValue}</div>
+
+                    <td className="px-6 py-2 break-words border border-gray-300">
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm text-slate-800">{buyer.section}</div>
+                      </div>
                     </td>
-                    
-                    <td className="px-6 py-4 text-sm font-medium">
+
+                    <td className="px-6 py-2 break-words border border-gray-300">
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm text-slate-800">{buyer.department}</div>
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-2 text-sm font-medium border border-gray-300">
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => handleEdit(buyer)}
@@ -368,7 +386,7 @@ const Section = () => {
         </div>
       </div>
 
-      
+
     </div>
   );
 };
