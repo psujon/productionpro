@@ -188,14 +188,13 @@ const showDataByFilter = async (req, res) => {
         const pool = await getPool();
         const data = req.body;
         const request = pool.request();
-        request.input('unit', mssql.NVarChar, data.login_user.unit);
-        request.input('section', mssql.NVarChar, data.section);
-        request.input('fromdate', mssql.Date, data.from_date);
-        request.input('todate', mssql.Date, data.till_date);
-        request.input('cardno', mssql.NVarChar, data.cardno || null);
-        request.input('style', mssql.NVarChar, data.style || null);
-        request.input('process', mssql.NVarChar, data.process || null);
-        const result = await request.execute('sp_production_entry_show_data');
+        request.input('IdCardNo', mssql.NVarChar, data.cardno || null);
+        request.input('Section', mssql.NVarChar, data.section);
+        request.input('Block', mssql.NVarChar, data.block || null);
+        request.input('DateFrom', mssql.Date, data.from_date);
+        request.input('DateTo', mssql.Date, data.till_date);
+        request.input('Unit', mssql.NVarChar, data.login_user.unit);
+        const result = await request.execute('web_production_sheet_sp');
         res.json(result.recordset || []);
     } catch (err) {
         console.error('Get Production List Error:', err);

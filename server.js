@@ -24,7 +24,7 @@ const blockRoutes = require('./server/routes/block.routes');
 // Mount routes
 app.use('/Buyer', buyerRoutes);
 app.use('/style', styleRoutes);
-app.use('/styleRate', styleRoutes); // Mapping styleRate to style routes for compatibility
+app.use('/styleRate', styleRoutes);
 app.use('/production', productionRoutes);
 app.use('/users', userRoutes);
 app.use('/section', sectionRoutes);
