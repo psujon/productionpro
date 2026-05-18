@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Consolidated Frontend and Backend Production Software",
   "scripts": {
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "dev": "concurrently \"npm run server\" \"npm run client -- --host\"",
     "server": "nodemon server.js",
     "client": "vite",
     "build": "vite build",

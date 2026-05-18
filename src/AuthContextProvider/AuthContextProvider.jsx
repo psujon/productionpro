@@ -9,9 +9,9 @@ export const useAuthContext = () => {
 }
 
 export const AuthProvider = ({ children }) => {
-  const server_url = 'http://localhost:5172';
+  const server_url = `http://${window.location.hostname}:5172`;
   const navigate = useNavigate();
-  // Initialize user from localStorage so the logged-in user survives route changes / reloads
+
   const [user, setUser] = useState(() => {
     try {
       const raw = localStorage.getItem('ps_user');
@@ -48,12 +48,10 @@ export const AuthProvider = ({ children }) => {
 
   const fetchRecentMessages = async (username) => {
     try {
-      // We can reuse the list endpoint but maybe with a special filter or just get all recent for this user
-      // For now, let's just fetch messages where receiver is current user
-      const res = await axios.post(`${server_url}/community/list`, { 
-          username, 
-          other_username: null, // special case for recent overall
-          is_recent: true 
+      const res = await axios.post(`${server_url}/community/list`, {
+        username,
+        other_username: null, // special case for recent overall
+        is_recent: true
       });
       setRecentMessages(res.data || []);
     } catch (err) {
@@ -75,11 +73,11 @@ export const AuthProvider = ({ children }) => {
       fetchPermissions(user.username);
       fetchUnreadCount(user.username);
       fetchRecentMessages(user.username);
-      
+
       if (user.role === 'Admin') {
         fetchUnresolvedTickets();
       }
-      
+
       const interval = setInterval(() => {
         fetchUnreadCount(user.username);
         fetchRecentMessages(user.username);
@@ -87,7 +85,7 @@ export const AuthProvider = ({ children }) => {
           fetchUnresolvedTickets();
         }
       }, 30000); // Poll every 30 seconds
-      
+
       return () => clearInterval(interval);
     }
   }, [user]);
