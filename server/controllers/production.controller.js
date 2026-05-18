@@ -202,11 +202,56 @@ const showDataByFilter = async (req, res) => {
     }
 }
 
+const getLast12MonthsSummary = async (req, res) => {
+    try {
+        const { unit } = req.body;
+        const pool = await getPool();
+        const user_role = req.body.role;
+        const section = (user_role === "Operator") ? req.body.section : null;
+        const request = pool.request();
+
+        request.input('unit', mssql.NVarChar(200), unit);
+        request.input('section', mssql.NVarChar(200), section);
+
+        const sql = `
+            SELECT 
+                style, 
+                process, 
+                SUM(CASE WHEN MONTH(prod_date) = 1 THEN quantity ELSE 0 END) as Jan,
+                SUM(CASE WHEN MONTH(prod_date) = 2 THEN quantity ELSE 0 END) as Feb,
+                SUM(CASE WHEN MONTH(prod_date) = 3 THEN quantity ELSE 0 END) as Mar,
+                SUM(CASE WHEN MONTH(prod_date) = 4 THEN quantity ELSE 0 END) as Apr,
+                SUM(CASE WHEN MONTH(prod_date) = 5 THEN quantity ELSE 0 END) as May,
+                SUM(CASE WHEN MONTH(prod_date) = 6 THEN quantity ELSE 0 END) as Jun,
+                SUM(CASE WHEN MONTH(prod_date) = 7 THEN quantity ELSE 0 END) as Jul,
+                SUM(CASE WHEN MONTH(prod_date) = 8 THEN quantity ELSE 0 END) as Aug,
+                SUM(CASE WHEN MONTH(prod_date) = 9 THEN quantity ELSE 0 END) as Sep,
+                SUM(CASE WHEN MONTH(prod_date) = 10 THEN quantity ELSE 0 END) as Oct,
+                SUM(CASE WHEN MONTH(prod_date) = 11 THEN quantity ELSE 0 END) as Nov,
+                SUM(CASE WHEN MONTH(prod_date) = 12 THEN quantity ELSE 0 END) as Dec,
+                SUM(quantity) as Total_Qty
+            FROM tbl_production_info 
+            WHERE unit = @unit 
+            AND (section = @section OR @section IS NULL)
+            AND prod_date >= DATEADD(month, -12, GETDATE())
+            GROUP BY style, process
+            ORDER BY Total_Qty DESC
+        `;
+
+        const result = await request.query(sql);
+        res.json(result.recordset || []);
+    } catch (err) {
+        console.error('Get Last 12 Months Summary Error:', err);
+        res.status(500).json({ error: 'Database error' });
+    }
+};
+
 module.exports = {
     searchProduction,
     getProductionData,
     batchInsert,
     getMonthlySummary,
+    getLast12MonthsSummary,
     getProductionList,
     showDataByFilter,
     updateProduction,

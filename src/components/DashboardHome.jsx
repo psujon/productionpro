@@ -6,18 +6,28 @@ const DashboardHome = () => {
   const { server_url, user } = useAuthContext();
   const [summary, setSummary] = useState([]);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [yearlySummary, setYearlySummary] = useState([]);
+  const [loadingYearly, setLoadingYearly] = useState(false);
+  const [showAllYearly, setShowAllYearly] = useState(false);
+  const [showAllMonthly, setShowAllMonthly] = useState(false);
 
 
   const fetchInitialData = async () => {
     try {
       setLoadingSummary(true);
-      const res = await axios.post(`${server_url}/production/style/monthlySummary`, { ...user, year: new Date().getFullYear(), month: new Date().getMonth() + 1 });
-      setSummary(Array.isArray(res.data) ? res.data : []);
+      setLoadingYearly(true);
+      const [monthlyRes, yearlyRes] = await Promise.all([
+        axios.post(`${server_url}/production/style/monthlySummary`, { ...user, year: new Date().getFullYear(), month: new Date().getMonth() + 1 }),
+        axios.post(`${server_url}/production/style/yearlySummary`, { ...user })
+      ]);
+      setSummary(Array.isArray(monthlyRes.data) ? monthlyRes.data : []);
+      setYearlySummary(Array.isArray(yearlyRes.data) ? yearlyRes.data : []);
     } catch (err) {
       console.error('Failed to load dashboard summary', err);
     }
     finally {
       setLoadingSummary(false);
+      setLoadingYearly(false);
     }
   };
 
@@ -34,13 +44,16 @@ const DashboardHome = () => {
     const data = { ...user, year, month }
     // console.log(data);
 
+    setLoadingSummary(true);
     await axios.post(`${server_url}/production/style/monthlySummary`, data)
       .then((res) => {
-        // setSummary(Array.isArray(res.data) ? res.data : []);
         setSummary(Array.isArray(res.data) ? res.data : []);
       })
       .catch((err) => {
         console.error('Failed to load dashboard summary', err);
+      })
+      .finally(() => {
+        setLoadingSummary(false);
       });
   }
 
@@ -146,7 +159,7 @@ const DashboardHome = () => {
                     </td>
                   </tr>
                 ) : (
-                  summary.map((r, idx) => (
+                  (showAllMonthly ? summary : summary.slice(0, 10)).map((r, idx) => (
                     <tr key={idx} className="hover:bg-emerald-50/50 transition-colors group cursor-default">
                       <td className="px-4 py-1">
                         {idx + 1}
@@ -157,13 +170,38 @@ const DashboardHome = () => {
                           {r.process}
                         </span>
                       </td>
-                      <td className="px-8 py-2 whitespace-nowrap text-sm text-right font-black text-slate-800">{r.Total_Qty.toLocaleString()}</td>
+                      <td className="px-8 py-2.5 whitespace-nowrap text-sm text-right font-black text-slate-800">{r.Total_Qty.toLocaleString()}</td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
+
+          {summary.length > 10 && !loadingSummary && (
+            <div className="p-4 border-t border-gray-50 flex justify-center">
+              <button
+                onClick={() => setShowAllMonthly(!showAllMonthly)}
+                className="px-6 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-black rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2"
+              >
+                {showAllMonthly ? (
+                  <>
+                    SHOW LESS
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 15l7-7 7 7" />
+                    </svg>
+                  </>
+                ) : (
+                  <>
+                    SHOW MORE ({summary.length - 10} MORE)
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Analytics Card */}
@@ -221,19 +259,128 @@ const DashboardHome = () => {
             </button>
           </div>
 
-          <div className="bg-gradient-to-br from-emerald-700 to-blue-800 rounded-3xl p-8 text-white shadow-2xl shadow-emerald-200 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
-              <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.45l8.15 14.1H3.85L12 5.45zM11 11v4h2v-4h-2zm0 6v2h2v-2h-2z" /></svg>
+        </div>
+      </div>
+
+      {/* Last 12 Months Style-wise Production Summary */}
+      <div className="premium-card overflow-hidden mt-4">
+        <div className="p-4 border-b border-gray-50 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
-            <h4 className="text-emerald-200 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Priority Focus</h4>
-            <p className="text-xl font-black leading-tight mb-6">Optimize stitching efficiency for Style-A batch.</p>
-            <div className="flex items-center gap-2 text-[10px] font-black text-white premium-card/10 w-fit px-4 py-2 rounded-xl backdrop-blur-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-              TARGET: +12% INCREASE
+            <div>
+              <h3 className="text-lg font-bold text-slate-700">Last 12 Months Production</h3>
+              <p className="text-xs text-gray-400 font-medium">Style-wise aggregated throughput</p>
             </div>
           </div>
         </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-100">
+            <thead>
+              <tr>
+                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">#</th>
+                <th className="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Style Name</th>
+                <th className="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Process</th>
+                <th className="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Jan</th>
+                <th className="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Feb</th>
+                <th className="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Mar</th>
+                <th className="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Apr</th>
+                <th className="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">May</th>
+                <th className="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Jun</th>
+                <th className="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Jul</th>
+                <th className="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Aug</th>
+                <th className="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Sep</th>
+                <th className="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Oct</th>
+                <th className="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Nov</th>
+                <th className="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Dec</th>
+                <th className="px-6 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Qty</th>
+              </tr>
+            </thead>
+            <tbody className="premium-card divide-y divide-gray-50">
+              {loadingYearly ? (
+                <tr>
+                  <td colSpan={16} className="px-8 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-10 h-10 border-[3px] border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+                      <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Syncing Database...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : yearlySummary.length === 0 ? (
+                <tr>
+                  <td colSpan={16} className="px-8 py-16 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="p-3 rounded-2xl text-gray-300">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                        </svg>
+                      </div>
+                      <span className="text-gray-400 text-sm font-medium italic">No production logs found for the last 12 months</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                (showAllYearly ? yearlySummary : yearlySummary.slice(0, 10)).map((r, idx) => (
+                  <tr key={idx} className="hover:bg-blue-50/30 transition-colors group cursor-default">
+                    <td className="px-4 py-2.5 text-sm font-medium text-gray-400">
+                      {idx + 1}
+                    </td>
+                    <td className="px-6 py-2.5 whitespace-nowrap text-sm font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{r.style}</td>
+                    <td className="px-6 py-2.5 whitespace-nowrap">
+                      <span className="px-3 py-1 bg-gray-100 rounded-lg text-[10px] font-black uppercase text-gray-600 tracking-tight">
+                        {r.process}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs text-right text-gray-600 font-medium">{r.Jan?.toLocaleString() || 0}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs text-right text-gray-600 font-medium">{r.Feb?.toLocaleString() || 0}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs text-right text-gray-600 font-medium">{r.Mar?.toLocaleString() || 0}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs text-right text-gray-600 font-medium">{r.Apr?.toLocaleString() || 0}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs text-right text-gray-600 font-medium">{r.May?.toLocaleString() || 0}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs text-right text-gray-600 font-medium">{r.Jun?.toLocaleString() || 0}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs text-right text-gray-600 font-medium">{r.Jul?.toLocaleString() || 0}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs text-right text-gray-600 font-medium">{r.Aug?.toLocaleString() || 0}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs text-right text-gray-600 font-medium">{r.Sep?.toLocaleString() || 0}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs text-right text-gray-600 font-medium">{r.Oct?.toLocaleString() || 0}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs text-right text-gray-600 font-medium">{r.Nov?.toLocaleString() || 0}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs text-right text-gray-600 font-medium">{r.Dec?.toLocaleString() || 0}</td>
+                    <td className="px-6 py-2.5 whitespace-nowrap text-sm text-right font-black text-slate-800">{r.Total_Qty.toLocaleString()}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {yearlySummary.length > 10 && !loadingYearly && (
+          <div className="p-4 border-t border-gray-50 flex justify-center">
+            <button
+              onClick={() => setShowAllYearly(!showAllYearly)}
+              className="px-6 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-black rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2"
+            >
+              {showAllYearly ? (
+                <>
+                  SHOW LESS
+                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 15l7-7 7 7" />
+                  </svg>
+                </>
+              ) : (
+                <>
+                  SHOW MORE ({yearlySummary.length - 10} MORE)
+                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
+
     </div>
   );
 };
