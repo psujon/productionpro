@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 
 const ProductionEntry = () => {
   const { server_url, user } = useAuthContext();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [sectionList, setSectionList] = useState([]);
   const [productionList, setProductionsList] = useState([]);
   const [processList, setProcessList] = useState([]);
@@ -166,6 +167,8 @@ const ProductionEntry = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (isSubmitting) return;
+
     if (formData.prod_date > new Date().toISOString().slice(0, 10)) {
       alert('Invalid date.');
       return;
@@ -203,52 +206,54 @@ const ProductionEntry = () => {
     }
 
     console.log(submissionData);
+    setIsSubmitting(true);
 
+    try {
+      if (editingBuyer && editingBuyer.id) {
+        // Update data
+        try {
+          const res = await axios.put(`${server_url}/production/update/${editingBuyer.id}`, submissionData);
+          toast.success(res.data.message);
+          setIsFormOpen(false);
 
-    if (editingBuyer && editingBuyer.id) {
-      // Update data
-      try {
-        const res = await axios.put(`${server_url}/production/update/${editingBuyer.id}`, submissionData);
-        toast.success(res.data.message);
-        setIsFormOpen(false);
-
-
-        setFormData({
-          prod_date: '',
-          section: '',
-          style: '',
-          process: '',
-          entries: [{ id: Date.now(), cardno: '', quantity: '', emp_name: '' }]
-        });
-        setEditingBuyer(null);
-        setStyleList([]);
-        setProcessList([]);
-      } catch (err) {
-        console.error('Update error:', err);
-        toast.error('Error updating record');
+          setFormData({
+            prod_date: '',
+            section: '',
+            style: '',
+            process: '',
+            entries: [{ id: Date.now(), cardno: '', quantity: '', emp_name: '' }]
+          });
+          setEditingBuyer(null);
+          setStyleList([]);
+          setProcessList([]);
+        } catch (err) {
+          console.error('Update error:', err);
+          toast.error('Error updating record');
+        }
+      } else {
+        try {
+          const res = await axios.post(`${server_url}/production/batch/insert`, submissionData);
+          toast.success(res.data.message);
+          setIsFormOpen(false);
+          setFormData({
+            prod_date: '',
+            section: '',
+            style: '',
+            process: '',
+            entries: [{ id: Date.now(), cardno: '', quantity: '', emp_name: '' }]
+          });
+          setStyleList([]);
+          setProcessList([]);
+        } catch (err) {
+          console.error('Insert error:', err);
+          toast.error(err.response?.data?.error || 'Error saving production entry');
+        }
       }
-    } else {
-      try {
-        const res = await axios.post(`${server_url}/production/batch/insert`, submissionData);
-        toast.success(res.data.message);
-        setIsFormOpen(false);
-        setFormData({
-          prod_date: '',
-          section: '',
-          style: '',
-          process: '',
-          entries: [{ id: Date.now(), cardno: '', quantity: '', emp_name: '' }]
-        });
-        setStyleList([]);
-        setProcessList([]);
-      } catch (err) {
-        console.error('Insert error:', err);
-        toast.error(err.response?.data?.error || 'Error saving production entry');
-      }
+
+      fetchProduction(user);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    fetchProduction(user);
-
   };
 
   const handleInputChange = (e) => {
@@ -646,8 +651,14 @@ const ProductionEntry = () => {
 
             <div className="flex justify-end items-center gap-6 pt-2 border-t border-gray-100">
               <button type="button" onClick={handleCancelButton} className="text-xs font-black text-gray-400 hover:text-slate-800 transition-colors uppercase tracking-widest">Discard Batch</button>
-              <button type="submit" className="px-12 py-4 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black shadow-2xl shadow-gray-200 active:scale-95 transition-all uppercase tracking-[0.2em]">
-                {editingBuyer?.id ? 'Update Records' : 'Commit Production'}
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className={`px-12 py-4 text-white text-xs font-black rounded-2xl shadow-2xl transition-all uppercase tracking-[0.2em] ${
+                  isSubmitting ? 'bg-gray-400 cursor-not-allowed opacity-75' : 'bg-gray-900 hover:bg-black active:scale-95 shadow-gray-200'
+                }`}
+              >
+                {isSubmitting ? (editingBuyer?.id ? 'Updating...' : 'Saving...') : (editingBuyer?.id ? 'Update Records' : 'Commit Production')}
               </button>
             </div>
           </form>

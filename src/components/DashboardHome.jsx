@@ -10,23 +10,22 @@ const DashboardHome = () => {
   const [loadingYearly, setLoadingYearly] = useState(false);
   const [showAllYearly, setShowAllYearly] = useState(false);
   const [showAllMonthly, setShowAllMonthly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
 
   const fetchInitialData = async () => {
     try {
-      setLoadingSummary(true);
       setLoadingYearly(true);
-      const [monthlyRes, yearlyRes] = await Promise.all([
-        axios.post(`${server_url}/production/style/monthlySummary`, { ...user, year: new Date().getFullYear(), month: new Date().getMonth() + 1 }),
-        axios.post(`${server_url}/production/style/yearlySummary`, { ...user })
+      const [yearlyRes] = await Promise.all([
+        axios.post(`${server_url}/production/style/yearlySummary`, { ...user, year: new Date().getFullYear() })
       ]);
-      setSummary(Array.isArray(monthlyRes.data) ? monthlyRes.data : []);
+
       setYearlySummary(Array.isArray(yearlyRes.data) ? yearlyRes.data : []);
     } catch (err) {
       console.error('Failed to load dashboard summary', err);
     }
     finally {
-      setLoadingSummary(false);
+
       setLoadingYearly(false);
     }
   };
@@ -68,6 +67,34 @@ const DashboardHome = () => {
     return sorted.slice(0, 6);
   }, [summary]);
 
+  const handle12MonthsDataLoad = async (e) => {
+    if (e) e.preventDefault();
+    const year = e ? new FormData(e.currentTarget).get('year') : new Date().getFullYear();
+    setLoadingYearly(true);
+    await axios.post(`${server_url}/production/style/12MonthsSummary`, { ...user, year })
+      .then((res) => {
+        setYearlySummary(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch((err) => {
+        console.error('Failed to load dashboard summary', err);
+      })
+      .finally(() => {
+        setLoadingYearly(false);
+      });
+  }
+
+  const filteredYearlySummary = React.useMemo(() => {
+    if (!searchQuery) return yearlySummary;
+    return yearlySummary.filter((item) => {
+      const styleName = item.style_name || item.style || '';
+      return styleName.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [yearlySummary, searchQuery]);
+
+  const handleStyleSearch = (searchValue) => {
+    setSearchQuery(searchValue);
+  }
+
   return (
     <div className="p-2  min-h-screen">
       {/* Page Header */}
@@ -90,8 +117,8 @@ const DashboardHome = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
-        {/* Production Summary Table */}
-        <div className="lg:col-span-2 premium-card overflow-hidden">
+
+        {/* <div className="lg:col-span-2 premium-card overflow-hidden">
           <div className="p-2 border-b border-gray-50 flex flex-col sm:flex-row items-center justify-between gap-2 /30">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
@@ -202,10 +229,10 @@ const DashboardHome = () => {
               </button>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* Analytics Card */}
-        <div className="flex flex-col gap-8">
+        {/* <div className="flex flex-col gap-8">
           <div className="premium-card p-8">
             <div className="flex items-center justify-between mb-8">
               <div>
@@ -259,11 +286,11 @@ const DashboardHome = () => {
             </button>
           </div>
 
-        </div>
+        </div> */}
       </div>
 
       {/* Last 12 Months Style-wise Production Summary */}
-      <div className="premium-card overflow-hidden mt-4">
+      <div className="premium-card overflow-hidden">
         <div className="p-4 border-b border-gray-50 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
@@ -276,13 +303,32 @@ const DashboardHome = () => {
               <p className="text-xs text-gray-400 font-medium">Style-wise aggregated throughput</p>
             </div>
           </div>
+          <div>
+            <input onChange={(e) => handleStyleSearch(e.target.value)} type="text" placeholder="Search by Style Name" className="w-100 px-3 py-2 premium-card border border-gray-200 rounded-xl text-xs font-bold text-gray-600 focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
+          </div>
+          <form onSubmit={handle12MonthsDataLoad} className="flex items-center gap-2">
+            <select
+              name="year"
+              className="px-3 py-2 premium-card border border-gray-200 rounded-xl text-xs font-bold text-gray-600 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+              defaultValue={new Date().getFullYear()}
+            >
+              {Array.from({ length: 6 }, (_, i) => {
+                const year = new Date().getFullYear() - i;
+                return <option key={year} value={year}>{year}</option>;
+              })}
+            </select>
+            <button className="px-4 py-2 bg-emerald-600 text-white text-xs font-black rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 active:scale-95">
+              FILTER
+            </button>
+          </form>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-100">
+        <div className="w-full overflow-x-auto max-w-full">
+          <table className="w-full min-w-[1200px] divide-y divide-gray-100">
             <thead>
               <tr>
                 <th className="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">#</th>
+                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Section</th>
                 <th className="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Style Name</th>
                 <th className="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Process</th>
                 <th className="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Jan</th>
@@ -310,7 +356,7 @@ const DashboardHome = () => {
                     </div>
                   </td>
                 </tr>
-              ) : yearlySummary.length === 0 ? (
+              ) : filteredYearlySummary.length === 0 ? (
                 <tr>
                   <td colSpan={16} className="px-8 py-16 text-center">
                     <div className="flex flex-col items-center gap-2">
@@ -324,14 +370,15 @@ const DashboardHome = () => {
                   </td>
                 </tr>
               ) : (
-                (showAllYearly ? yearlySummary : yearlySummary.slice(0, 10)).map((r, idx) => (
+                (showAllYearly ? filteredYearlySummary : filteredYearlySummary.slice(0, 10)).map((r, idx) => (
                   <tr key={idx} className="hover:bg-blue-50/30 transition-colors group cursor-default">
                     <td className="px-4 py-2.5 text-sm font-medium text-gray-400">
                       {idx + 1}
                     </td>
-                    <td className="px-6 py-2.5 whitespace-nowrap text-sm font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{r.style}</td>
-                    <td className="px-6 py-2.5 whitespace-nowrap">
-                      <span className="px-3 py-1 bg-gray-100 rounded-lg text-[10px] font-black uppercase text-gray-600 tracking-tight">
+                    <td className="px-4 py-2.5 max-w-[120px] truncate whitespace-nowrap text-sm font-bold text-slate-600" title={r.section}>{r.section}</td>
+                    <td className="px-6 py-2.5 max-w-[200px] truncate whitespace-nowrap text-sm font-bold text-slate-800 group-hover:text-blue-700 transition-colors" title={r.style}>{r.style}</td>
+                    <td className="px-6 py-2.5 max-w-[150px] truncate whitespace-nowrap">
+                      <span className="px-3 py-1 bg-gray-100 rounded-lg text-[10px] font-black uppercase text-gray-600 tracking-tight block truncate" title={r.process}>
                         {r.process}
                       </span>
                     </td>
@@ -355,7 +402,7 @@ const DashboardHome = () => {
           </table>
         </div>
 
-        {yearlySummary.length > 10 && !loadingYearly && (
+        {filteredYearlySummary.length > 10 && !loadingYearly && (
           <div className="p-4 border-t border-gray-50 flex justify-center">
             <button
               onClick={() => setShowAllYearly(!showAllYearly)}
@@ -370,7 +417,7 @@ const DashboardHome = () => {
                 </>
               ) : (
                 <>
-                  SHOW MORE ({yearlySummary.length - 10} MORE)
+                  SHOW MORE ({filteredYearlySummary.length - 10} MORE)
                   <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
                   </svg>

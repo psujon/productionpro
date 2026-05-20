@@ -32,6 +32,7 @@ const Useractivitylogs = lazy(() => import('./components/Useractivitylogs'));
 const Permission = lazy(() => import('./components/Permission'));
 const Community = lazy(() => import('./components/Community'));
 const Tickets = lazy(() => import('./components/Tickets'));
+const BackupDatabase = lazy(() => import('./components/BackupDatabase'));
 
 // finally the App component itself router management with auth provider
 
@@ -72,6 +73,7 @@ function App() {
                 <Route path='permission' element={<Suspense fallback={<div>Loading...</div>}><Permission /></Suspense>} />
                 <Route path='community' element={<Suspense fallback={<div>Loading...</div>}><Community /></Suspense>} />
                 <Route path='tickets' element={<Suspense fallback={<div>Loading...</div>}><Tickets /></Suspense>} />
+                <Route path='backup' element={<Suspense fallback={<div>Loading...</div>}><BackupDatabase /></Suspense>} />
                 {/* Add more dashboard routes here as needed */}
               </Route>
             </Route>

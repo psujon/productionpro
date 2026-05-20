@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuthContext } from '../AuthContextProvider/AuthContextProvider';
 import { Link } from 'react-router-dom';
@@ -7,7 +7,48 @@ const DashboardNavbar = ({ onToggleSidebar }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [isTicketsOpen, setIsTicketsOpen] = useState(false);
+  const [backupStatus, setBackupStatus] = useState('loading'); // 'loading' | 'done' | 'not_yet'
   const { user, server_url, logout, bgColor, setBgColor, unreadCount, recentMessages, setActiveChatUser, fetchUnreadCount, fetchRecentMessages, unresolvedTickets } = useAuthContext();
+
+  const checkBackupStatus = async () => {
+    try {
+      const response = await fetch(`${server_url}/backup/list`);
+      if (!response.ok) throw new Error();
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const latestDate = new Date(data[0].BackupFinishDate);
+        const today = new Date();
+
+        const isToday = latestDate.getFullYear() === today.getFullYear() &&
+          latestDate.getMonth() === today.getMonth() &&
+          latestDate.getDate() === today.getDate();
+
+        setBackupStatus(isToday ? 'done' : 'not_yet');
+      } else {
+        setBackupStatus('not_yet');
+      }
+    } catch (err) {
+      console.error('Failed to check today\'s backup status:', err);
+      setBackupStatus('not_yet');
+    }
+  };
+
+  useEffect(() => {
+    checkBackupStatus();
+
+    const handleBackupCompleted = () => {
+      checkBackupStatus();
+    };
+
+    window.addEventListener('database_backup_completed', handleBackupCompleted);
+    const interval = setInterval(checkBackupStatus, 30000);
+
+    return () => {
+      window.removeEventListener('database_backup_completed', handleBackupCompleted);
+      clearInterval(interval);
+    };
+  }, [server_url]);
 
   const handleMessageClick = async (msg) => {
     setActiveChatUser({ username: msg.sender_username, full_name: msg.sender_username });
@@ -57,6 +98,46 @@ const DashboardNavbar = ({ onToggleSidebar }) => {
 
           {/* Right Section */}
           <div className="flex items-center gap-4">
+            {/* Today's Backup Status */}
+            {backupStatus === 'loading' && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl border border-gray-100 bg-slate-50/50 animate-pulse text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                <span>Backup Check</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+              </div>
+            )}
+
+            {backupStatus === 'done' && (
+              <Link
+                to="/dashboard/backup"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl border border-emerald-100 bg-emerald-50/30 text-emerald-700 shadow-sm relative group cursor-pointer hover:bg-emerald-50/60 transition duration-200"
+                title="Daily Database Backup Complete"
+              >
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Backup</span>
+                <span className="inline-flex items-center gap-1 font-black text-[10px] uppercase tracking-wider text-emerald-700">
+                  <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Success
+                </span>
+              </Link>
+            )}
+
+            {backupStatus === 'not_yet' && (
+              <Link
+                to="/dashboard/backup"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl border border-red-100 bg-red-50/30 text-red-700 shadow-sm relative group cursor-pointer hover:bg-red-50/60 transition duration-200"
+                title="Database Backup is Pending for Today - Click to Backup"
+              >
+                <span className="text-[10px] font-black uppercase tracking-widest text-red-500">Backup</span>
+                <span className="inline-flex items-center gap-1 font-black text-[10px] uppercase tracking-wider text-red-600">
+                  <svg className="w-3.5 h-3.5 text-red-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  Not Yet
+                </span>
+              </Link>
+            )}
+
             {/* Color Picker */}
             <div className="flex items-center gap-2 mr-2 px-3 py-1.5  rounded-2xl border border-gray-100">
               <label htmlFor="bg-picker" className="text-[10px] font-black text-gray-400 uppercase tracking-widest cursor-pointer">Theme</label>
@@ -127,11 +208,11 @@ const DashboardNavbar = ({ onToggleSidebar }) => {
                 </div>
               )}
             </div>
-            
+
             {/* Ticket Notification for Admin */}
             {user?.role === 'Admin' && (
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setIsTicketsOpen(!isTicketsOpen)}
                   className="p-3 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-2xl transition-all relative group"
                 >

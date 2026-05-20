@@ -165,13 +165,15 @@ const ProductionEntryShow = () => {
       process: e.target.process.value,
       from_date: e.target.from_date.value,
       till_date: e.target.till_date.value,
-      cardno: e.target.cardno.value
+      cardno: e.target.cardno.value,
+      login_user: user
     }
     const submissionData = { ...data, login_user: user }
 
     // Submit data
-    axios.post(`${server_url}/production/showDataByFilter`, submissionData)
+    axios.post(`${server_url}/production/productionDataShow`, submissionData)
       .then(res => {
+        console.log(res.data);
         setProductionsList(res.data);
         setCurrentPage(1);
       })
@@ -688,7 +690,7 @@ const ProductionEntryShow = () => {
                   // value={pageSize}
                   onChange={async (e) => {
                     // Update page size and fetch data from server
-                    const newSize = parseInt(e.target.value, 10);
+                    const newSize = parseInt(e.target.value, 50);
                     // setPageSize(newSize);
                     setCurrentPage(1);
 
@@ -769,7 +771,9 @@ const ProductionEntryShow = () => {
                     </td>
                     <td className="px-2 py-2 border border-amber-300">
                       <div className="text-sm text-slate-800 break-words">{
-                        new Date(buyer.prod_date).toISOString().slice(0, 10)
+                        buyer.prod_date && !isNaN(new Date(buyer.prod_date).getTime())
+                          ? new Date(buyer.prod_date).toISOString().slice(0, 10)
+                          : 'N/A'
                       }</div>
                     </td>
                     <td className="px-2 py-2 border border-amber-300">

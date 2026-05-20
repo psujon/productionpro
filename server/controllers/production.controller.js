@@ -57,23 +57,36 @@ const batchInsert = async (req, res) => {
             return res.status(400).json({ error: 'No production entries provided' });
         }
         const pool = await getPool();
+        const transaction = new mssql.Transaction(pool);
 
-        const promises = entries.map(entry => {
-            const request = pool.request();
-            request.input('prodId', mssql.Int, 0);
-            request.input('unit', mssql.NVarChar(200), unit);
-            request.input('section', mssql.NVarChar(200), section);
-            request.input('prod_date', mssql.Date, prod_date);
-            request.input('style', mssql.NVarChar(200), style);
-            request.input('process', mssql.NVarChar(200), process);
-            request.input('cardno', mssql.NVarChar(200), entry.cardno);
-            request.input('quantity', mssql.Int, entry.quantity);
-            request.input('processby', mssql.NVarChar(200), username);
-            return request.execute('sp_production_insert_update');
-        });
+        try {
+            await transaction.begin();
 
-        await Promise.all(promises);
-        res.status(201).json({ message: 'Production entries inserted successfully' });
+            for (const entry of entries) {
+                const request = new mssql.Request(transaction);
+                request.input('prodId', mssql.Int, 0);
+                request.input('unit', mssql.NVarChar(200), unit);
+                request.input('section', mssql.NVarChar(200), section);
+                request.input('prod_date', mssql.Date, prod_date);
+                request.input('style', mssql.NVarChar(200), style);
+                request.input('process', mssql.NVarChar(200), process);
+                request.input('cardno', mssql.NVarChar(200), entry.cardno);
+                request.input('quantity', mssql.Int, entry.quantity);
+                request.input('processby', mssql.NVarChar(200), username);
+
+                await request.execute('sp_production_insert_update');
+            }
+
+            await transaction.commit();
+            res.status(201).json({ message: 'Production entries inserted successfully' });
+        } catch (err) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackErr) {
+                console.error('Batch Insert Transaction Rollback Error:', rollbackErr);
+            }
+            throw err;
+        }
     } catch (err) {
         console.error('Insert Production Error:', err);
         res.status(500).json({ error: err.message || 'Database error' });
@@ -89,26 +102,41 @@ const updateProduction = async (req, res) => {
             return res.status(400).json({ error: 'No production entries provided' });
         }
         const pool = await getPool();
-        const promises = entries.map(entry => {
-            const request = pool.request();
-            request.input('prodId', mssql.Int, id);
-            request.input('unit', mssql.NVarChar(200), unit);
-            request.input('section', mssql.NVarChar(200), section);
-            request.input('prod_date', mssql.Date, prod_date);
-            request.input('style', mssql.NVarChar(200), style);
-            request.input('process', mssql.NVarChar(200), process);
-            request.input('cardno', mssql.NVarChar(200), entry.cardno);
-            request.input('quantity', mssql.Int, entry.quantity);
-            request.input('processby', mssql.NVarChar(200), username);
-            return request.execute('sp_production_insert_update');
-        });
-        await Promise.all(promises);
-        res.status(201).json({ message: 'Production entries updated successfully' });
+        const transaction = new mssql.Transaction(pool);
+
+        try {
+            await transaction.begin();
+
+            for (const entry of entries) {
+                const request = new mssql.Request(transaction);
+                request.input('prodId', mssql.Int, id);
+                request.input('unit', mssql.NVarChar(200), unit);
+                request.input('section', mssql.NVarChar(200), section);
+                request.input('prod_date', mssql.Date, prod_date);
+                request.input('style', mssql.NVarChar(200), style);
+                request.input('process', mssql.NVarChar(200), process);
+                request.input('cardno', mssql.NVarChar(200), entry.cardno);
+                request.input('quantity', mssql.Int, entry.quantity);
+                request.input('processby', mssql.NVarChar(200), username);
+
+                await request.execute('sp_production_insert_update');
+            }
+
+            await transaction.commit();
+            res.status(201).json({ message: 'Production entries updated successfully' });
+        } catch (err) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackErr) {
+                console.error('Update Transaction Rollback Error:', rollbackErr);
+            }
+            throw err;
+        }
     } catch (err) {
         console.error('Update Production Error:', err);
         res.status(500).json({ error: err.message || 'Database error' });
     }
-}
+};
 const deleteEntry = async (req, res) => {
     try {
         const { id } = req.params;
@@ -208,43 +236,51 @@ const getLast12MonthsSummary = async (req, res) => {
         const pool = await getPool();
         const user_role = req.body.role;
         const section = (user_role === "Operator") ? req.body.section : null;
+        let yearVal = req.body.year;
+        if (!yearVal) {
+            const today = new Date();
+            if (today.getMonth() >= 6) {
+                yearVal = today.getFullYear() + 1;
+            } else {
+                yearVal = today.getFullYear();
+            }
+        } else {
+            yearVal = parseInt(yearVal);
+        }
+        const startDate = `${yearVal - 1}-12-21`;
+        const endDate = `${yearVal}-12-20`;
         const request = pool.request();
-
         request.input('unit', mssql.NVarChar(200), unit);
         request.input('section', mssql.NVarChar(200), section);
-
-        const sql = `
-            SELECT 
-                style, 
-                process, 
-                SUM(CASE WHEN MONTH(prod_date) = 1 THEN quantity ELSE 0 END) as Jan,
-                SUM(CASE WHEN MONTH(prod_date) = 2 THEN quantity ELSE 0 END) as Feb,
-                SUM(CASE WHEN MONTH(prod_date) = 3 THEN quantity ELSE 0 END) as Mar,
-                SUM(CASE WHEN MONTH(prod_date) = 4 THEN quantity ELSE 0 END) as Apr,
-                SUM(CASE WHEN MONTH(prod_date) = 5 THEN quantity ELSE 0 END) as May,
-                SUM(CASE WHEN MONTH(prod_date) = 6 THEN quantity ELSE 0 END) as Jun,
-                SUM(CASE WHEN MONTH(prod_date) = 7 THEN quantity ELSE 0 END) as Jul,
-                SUM(CASE WHEN MONTH(prod_date) = 8 THEN quantity ELSE 0 END) as Aug,
-                SUM(CASE WHEN MONTH(prod_date) = 9 THEN quantity ELSE 0 END) as Sep,
-                SUM(CASE WHEN MONTH(prod_date) = 10 THEN quantity ELSE 0 END) as Oct,
-                SUM(CASE WHEN MONTH(prod_date) = 11 THEN quantity ELSE 0 END) as Nov,
-                SUM(CASE WHEN MONTH(prod_date) = 12 THEN quantity ELSE 0 END) as Dec,
-                SUM(quantity) as Total_Qty
-            FROM tbl_production_info 
-            WHERE unit = @unit 
-            AND (section = @section OR @section IS NULL)
-            AND prod_date >= DATEADD(month, -12, GETDATE())
-            GROUP BY style, process
-            ORDER BY Total_Qty DESC
-        `;
-
-        const result = await request.query(sql);
+        request.input('startDate', mssql.Date, startDate);
+        request.input('endDate', mssql.Date, endDate);
+        const result = await request.execute('web_last_12_month_data_show')
         res.json(result.recordset || []);
     } catch (err) {
         console.error('Get Last 12 Months Summary Error:', err);
         res.status(500).json({ error: 'Database error' });
     }
 };
+
+const productionDataShow = async (req, res) => {
+    try {
+        const pool = await getPool();
+        const data = req.body;
+        const request = pool.request();
+        request.input('unit', mssql.NVarChar(200), data.login_user.unit);
+        request.input('section', mssql.NVarChar(200), data.section || null);
+        request.input('fromdate', mssql.Date, data.from_date || null);
+        request.input('todate', mssql.Date, data.till_date || null);
+        request.input('cardno', mssql.NVarChar(200), data.cardno || null);
+        request.input('style', mssql.NVarChar(200), data.style || null);
+        request.input('process', mssql.NVarChar(200), data.process || null);
+        const result = await request.execute('sp_production_entry_show_data');
+        res.json(result.recordset || []);
+    } catch (err) {
+        console.error('Get Production List Error:', err);
+        res.status(500).json({ error: 'Database error' });
+    }
+}
 
 module.exports = {
     searchProduction,
@@ -255,5 +291,6 @@ module.exports = {
     getProductionList,
     showDataByFilter,
     updateProduction,
-    deleteEntry
+    deleteEntry,
+    productionDataShow
 };
