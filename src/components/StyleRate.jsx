@@ -166,7 +166,7 @@ const StyleRate = () => {
       style: item.style,
       process: item.process,
       price: item.price,
-      effective_date: item.effective_date
+      effective_date: item.effective_date ? item.effective_date.slice(0, 10) : ''
     });
     setIsFormOpen(true);
   };
@@ -371,7 +371,7 @@ const StyleRate = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 tracking-wider">Effective Date</label>
-                <input type="date" step="0.01" name="price" value={formData.effective_date} onChange={handleInputChange} required className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none font-medium transition-all" />
+                <input type="date" name="effective_date" value={formData.effective_date} onChange={handleInputChange} required className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none font-medium transition-all" />
               </div>
             </div>
 
@@ -452,7 +452,7 @@ const StyleRate = () => {
                     <span className="text-sm font-black text-blue-600">৳ {(Number(item.price) || 0).toFixed(2)}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-black text-blue-600">{item.effective_date}</span>
+                    <span className="text-sm font-black text-blue-600">{item.effective_date ? item.effective_date.slice(0, 10) : ''}</span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
