@@ -10,6 +10,19 @@ const GlobalDepartmentFetch = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch global sections' });
     }
 }
+const GlobalDepartmentWiseSectionList = async (req, res) => {
+    try {
+        const pool = await getPool();
+        const department = req.body.department;
+        const result = await pool.request()
+            .input('department', department)
+            .query('SELECT section FROM tbl_section WHERE department = @department order by section asc');
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('Error fetching global sections:', error);
+        res.status(500).json({ error: 'Failed to fetch global sections' });
+    }
+}
 
 const GlobalSectionList = async (req, res) => {
     try {
@@ -198,5 +211,6 @@ module.exports = {
     GlobalCountryDelete,
     GlobalDepartmentAdd,
     GlobalDepartmentUpdate,
-    GlobalDepartmentDelete
+    GlobalDepartmentDelete,
+    GlobalDepartmentWiseSectionList
 };

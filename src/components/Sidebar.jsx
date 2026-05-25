@@ -60,6 +60,16 @@ const Sidebar = ({ isOpen }) => {
       ]
     },
     {
+      id: 'Process',
+      label: 'Process',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18m0 0a9 9 0 11-2.096-3.085" />
+        </svg>
+      ),
+      href: '/dashboard/Process'
+    },
+    {
       id: 'Reports',
       label: 'Reporting',
       icon: (

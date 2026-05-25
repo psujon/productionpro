@@ -40,6 +40,7 @@ const Permission = () => {
         { id: 'employeeInformation', label: 'Employees List' },
       ]
     },
+    { id: 'Process', label: 'Process' },
     { id: 'Reports', label: 'Reporting' },
     {
       id: 'user_management',

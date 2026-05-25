@@ -21,7 +21,8 @@ const StyleRate = () => {
     section: '',
     style: '',
     process: '',
-    price: 0
+    price: 0,
+    effective_date: new Date().toISOString().slice(0, 10)
   });
   const [processDropdownVisible, setProcessDropdownVisible] = useState(false);
   const [styleDropdownVisible, setStyleDropdownVisible] = useState(false);
@@ -52,6 +53,7 @@ const StyleRate = () => {
     style: '150px',
     process: '200px',
     price: '100px',
+    effective_date: '80px',
     actions: '80px'
   });
 
@@ -163,7 +165,8 @@ const StyleRate = () => {
       section: item.section,
       style: item.style,
       process: item.process,
-      price: item.price
+      price: item.price,
+      effective_date: item.effective_date
     });
     setIsFormOpen(true);
   };
@@ -270,6 +273,7 @@ const StyleRate = () => {
     { key: 'style', label: 'Style' },
     { key: 'process', label: 'Process' },
     { key: 'price', label: 'Price' },
+    { key: 'effective_date', label: 'Effective Date' },
     { key: 'actions', label: 'Actions' }
   ];
 
@@ -316,7 +320,7 @@ const StyleRate = () => {
             <h3 className="text-lg font-bold text-slate-700">{editingItem ? 'Edit Style Rate' : 'Create New Piece Rate'}</h3>
           </div>
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 tracking-wider">Section</label>
                 <select name="section" value={formData.section} required onChange={handleSectionChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none font-medium transition-all">
@@ -364,6 +368,10 @@ const StyleRate = () => {
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 tracking-wider">Rate (BDT)</label>
                 <input type="number" step="0.01" name="price" value={formData.price} onChange={handleInputChange} required className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none font-medium transition-all" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 tracking-wider">Effective Date</label>
+                <input type="date" step="0.01" name="price" value={formData.effective_date} onChange={handleInputChange} required className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none font-medium transition-all" />
               </div>
             </div>
 
@@ -442,6 +450,9 @@ const StyleRate = () => {
                   <td className="px-6 py-4 text-sm text-gray-600 font-medium break-words">{item.process}</td>
                   <td className="px-6 py-4">
                     <span className="text-sm font-black text-blue-600">৳ {(Number(item.price) || 0).toFixed(2)}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm font-black text-blue-600">{item.effective_date}</span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">

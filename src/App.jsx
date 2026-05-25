@@ -24,6 +24,7 @@ const ProductionEntryShow = lazy(() => import('./components/ProductionEntryShow'
 const EmployeeInformation = lazy(() => import('./components/EmployeeInformation'));
 const ErrorPage = lazy(() => import('./components/ErrorPage'));
 const Reports = lazy(() => import('./components/Reports'));
+const Process = lazy(() => import('./components/Process'));
 const Users = lazy(() => import('./components/Users'));
 const Department = lazy(() => import('./components/Department'));
 const Section = lazy(() => import('./components/Section'));
@@ -65,6 +66,7 @@ function App() {
                 <Route path='ProductionReceived' element={<Suspense fallback={<div>Loading...</div>}><ErrorPage /></Suspense>} />
                 <Route path='employeeInformation' element={<Suspense fallback={<div>Loading...</div>}><EmployeeInformation /></Suspense>} />
                 <Route path='Reports' element={<Suspense fallback={<div>Loading...</div>}><Reports /></Suspense>} />
+                <Route path='Process' element={<Suspense fallback={<div>Loading...</div>}><Process /></Suspense>} />
                 <Route path='users' element={<Suspense fallback={<div>Loading...</div>}><Users /></Suspense>} />
                 <Route path='department' element={<Suspense fallback={<div>Loading...</div>}><Department /></Suspense>} />
                 <Route path='section' element={<Suspense fallback={<div>Loading...</div>}><Section /></Suspense>} />

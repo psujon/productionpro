@@ -57,7 +57,7 @@ const getStyleRates = async (req, res) => {
     try {
         const pool = await getPool();
         const { unit } = req.body;
-        const sql = `SELECT id, section, style, process, price FROM tbl_style_rate WHERE unit='${unit}' ORDER BY id DESC`;
+        const sql = `SELECT id, section, style, process,effective_date, price FROM tbl_style_rate WHERE unit='${unit}' ORDER BY id DESC`;
         const result = await pool.request().query(sql);
         res.json(result.recordset || []);
     } catch (err) {

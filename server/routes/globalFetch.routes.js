@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { GlobalSectionList, GlobalBuyerFetch, SectionWiseStyleLoad, StyleWiseProcessLoad, GlobalDepartmentFetch, GlobalBlockFetch, GlobalCountryList, GlobalCountryAdd, GlobalCountryUpdate, GlobalCountryDelete, GlobalDepartmentAdd, GlobalDepartmentUpdate, GlobalDepartmentDelete } = require('../controllers/globalFetch.controller');
+const { GlobalSectionList, GlobalBuyerFetch, SectionWiseStyleLoad, StyleWiseProcessLoad, GlobalDepartmentFetch, GlobalBlockFetch, GlobalCountryList, GlobalCountryAdd, GlobalCountryUpdate, GlobalCountryDelete, GlobalDepartmentAdd, GlobalDepartmentUpdate, GlobalDepartmentDelete, GlobalDepartmentWiseSectionList } = require('../controllers/globalFetch.controller');
 
 router.get('/section/list', GlobalSectionList);
 router.get('/buyer/getlist', GlobalBuyerFetch)
@@ -16,4 +16,5 @@ router.post('/country/delete', GlobalCountryDelete)
 router.post('/department/add', GlobalDepartmentAdd)
 router.post('/department/update', GlobalDepartmentUpdate)
 router.post('/department/delete', GlobalDepartmentDelete)
+router.post('/departmentWiseSectionList', GlobalDepartmentWiseSectionList)
 module.exports = router;

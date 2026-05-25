@@ -282,6 +282,41 @@ const productionDataShow = async (req, res) => {
     }
 }
 
+let activeWagesProcess = Promise.resolve();
+
+const monthlyProductionWagesProcess = async (req, res) => {
+    activeWagesProcess = new Promise((resolve) => {
+        activeWagesProcess.then(async () => {
+            try {
+                const pool = await getPool();
+                const data = req.body;
+                const request = pool.request();
+                request.input('IdCardNo', mssql.NVarChar(200), data.cardno || null);
+                request.input('Block', mssql.NVarChar(200), data.block || null);
+                request.input('Section', mssql.NVarChar(200), data.section);
+                request.input('DateFrom', mssql.Date, data.from_date);
+                request.input('DateTo', mssql.Date, data.till_date);
+                request.input('unit', mssql.NVarChar(200), data.login_user.unit)
+                request.input('processby', mssql.NVarChar(200), data.login_user.username);
+
+                const result = await request.execute('sp_production_wages_data_save');
+                res.status(200).json({ message: 'Monthly production wages data saved successfully' });
+            } catch (err) {
+                console.error('Monthly Production Wages Process Error:', err);
+                res.status(500).json({ error: 'Database error or process execution failed' });
+            } finally {
+                resolve();
+            }
+        }).catch((err) => {
+            console.error('Wages queue execution crashed:', err);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Internal server error in process queue' });
+            }
+            resolve();
+        });
+    });
+};
+
 module.exports = {
     searchProduction,
     getProductionData,
@@ -292,5 +327,6 @@ module.exports = {
     showDataByFilter,
     updateProduction,
     deleteEntry,
-    productionDataShow
+    productionDataShow,
+    monthlyProductionWagesProcess
 };

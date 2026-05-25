@@ -14,4 +14,6 @@ router.put('/update/:id', productionController.updateProduction)
 router.delete('/delete/:id', productionController.deleteEntry)
 router.post('/productionDataShow', productionController.productionDataShow)
 
+router.post('/monthlyProductionWagesProcess', productionController.monthlyProductionWagesProcess)
+
 module.exports = router;
