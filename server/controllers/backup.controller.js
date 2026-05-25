@@ -16,8 +16,8 @@ const GetBackupsList = async (req, res) => {
         const query = `
             SELECT top(10)
                 bs.database_name AS DatabaseName,
-                bs.backup_start_date AS BackupStartDate,
-                bs.backup_finish_date AS BackupFinishDate,
+                CONVERT(VARCHAR(19), bs.backup_start_date, 126) AS BackupStartDate,
+                CONVERT(VARCHAR(19), bs.backup_finish_date, 126) AS BackupFinishDate,
                 bmf.physical_device_name AS BackupPath,
                 bs.backup_size AS BackupSize,
                 bs.user_name AS BackupUser,

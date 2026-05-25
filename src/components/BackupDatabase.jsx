@@ -94,7 +94,13 @@ const BackupDatabase = () => {
   // Helper to format date
   const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A';
-    const date = new Date(dateStr);
+    // If the date string ends with 'Z' but represents a timezone-naive local date from SQL Server,
+    // we strip 'Z' and milliseconds to force JavaScript to parse it as a local date.
+    let normalized = dateStr;
+    if (typeof dateStr === 'string' && dateStr.endsWith('Z')) {
+      normalized = dateStr.replace(/\.\d+Z$/, '').replace(/Z$/, '');
+    }
+    const date = new Date(normalized);
     return date.toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',

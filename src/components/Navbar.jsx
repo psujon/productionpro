@@ -17,7 +17,11 @@ const DashboardNavbar = ({ onToggleSidebar }) => {
       const data = await response.json();
 
       if (data && data.length > 0) {
-        const latestDate = new Date(data[0].BackupFinishDate);
+        let dateStr = data[0].BackupFinishDate;
+        if (typeof dateStr === 'string' && dateStr.endsWith('Z')) {
+          dateStr = dateStr.replace(/\.\d+Z$/, '').replace(/Z$/, '');
+        }
+        const latestDate = new Date(dateStr);
         const today = new Date();
 
         const isToday = latestDate.getFullYear() === today.getFullYear() &&
