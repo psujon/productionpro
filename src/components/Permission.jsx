@@ -49,6 +49,7 @@ const Permission = () => {
         { id: 'users', label: 'User List' },
         { id: 'Useractivitylogs', label: 'Activity Logs' },
         { id: 'Permission', label: 'Permission' },
+        { id: 'databaselock', label: 'Database Lock' },
       ]
     },
     {

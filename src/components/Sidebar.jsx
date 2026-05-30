@@ -90,7 +90,8 @@ const Sidebar = ({ isOpen }) => {
       submenu: [
         { id: 'users', label: 'User List', href: '/dashboard/users' },
         { id: 'Useractivitylogs', label: 'Activity Logs', href: '/dashboard/Useractivitylogs' },
-        { id: 'Permission', label: 'Permission', href: '/dashboard/permission', adminOnly: true }
+        { id: 'Permission', label: 'Permission', href: '/dashboard/permission', adminOnly: true },
+        { id: 'databaselock', label: 'Database Lock', href: '/dashboard/databaselock' }
       ]
     },
     {

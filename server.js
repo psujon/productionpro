@@ -21,6 +21,7 @@ const communityRoutes = require('./server/routes/community.routes');
 const ticketRoutes = require('./server/routes/ticket.routes');
 const blockRoutes = require('./server/routes/block.routes');
 const backupRoutes = require('./server/routes/backup.routes');
+const databaseLockRoutes = require('./server/routes/databaseLock.routes');
 
 // Mount routes
 app.use('/Buyer', buyerRoutes);
@@ -35,6 +36,7 @@ app.use('/community', communityRoutes);
 app.use('/tickets', ticketRoutes);
 app.use('/block', blockRoutes);
 app.use('/backup', backupRoutes);
+app.use('/databaseLock', databaseLockRoutes);
 
 // Compatibility route for direct login
 const userController = require('./server/controllers/user.controller');
